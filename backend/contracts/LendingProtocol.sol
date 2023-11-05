@@ -12,6 +12,8 @@ contract LendingProtocol {
     address public owner;
     uint256 public interestRate; //annual interest rate (in percentage)
 
+    uint public lastDistributed;
+
     address[] public lenders;
     address[] public borrowers;
     mapping(address => uint256) public lendersInterestBalance;
@@ -56,6 +58,10 @@ contract LendingProtocol {
         address _lender
     ) public view returns (uint256) {
         return ethLocked[_lender];
+    }
+
+    function getInterestEarned(address _lender) public view returns (uint256) {
+        return lendersInterestBalance[_lender];
     }
 
     function depositLPTokens(uint256 _amount) external {
@@ -117,6 +123,43 @@ contract LendingProtocol {
         borrowers.push(msg.sender);
         // ethLocked[msg.sender] -= _amount;
         // totalEthLocked -= msg.value;
+    }
+
+    // Calculate annual interest based on total ETH locked
+    function calculateInterest() public view returns (uint256) {
+        return (totalEthLocked * interestRate) / 100;
+    }
+
+    // Distribute interest to lenders
+    function distributeInterest() public {
+        //unchecked for under or overflowing problems
+        unchecked {
+            // Calculate total interest
+            uint256 interest = calculateInterest();
+
+            // Keep track of interest distributed so far
+            uint256 distributed = 0;
+
+            // Loop through lenders
+            for (uint i = 0; i < lenders.length; i++) {
+                // Calculate interest for this lender
+                // Based on percentage of total LP tokens supplied
+                uint256 lenderInterest = (interest *
+                    lpTokenBalances[lenders[i]]) / totalLpTokens;
+
+                // Transfer interest to lender
+                lendersInterestBalance[lenders[i]] += lenderInterest;
+
+                // Update running total
+                distributed += lenderInterest;
+            }
+
+            // Add remaining interest to contract owner
+            lendersInterestBalance[owner] += interest - distributed;
+
+            // Reset total interest
+            totalInterest = 0;
+        }
     }
 
     fallback() external payable {

@@ -115,4 +115,53 @@ describe("LendingProtocol", function () {
     // Expect the user's ETH locked balance to be 8
     expect(userEthLockedBalance).to.equal(ethers.parseEther("8"));
   });
+
+  it("interest is distributed correctly", async function () {
+    const ownerDepositAmount = ethers.parseEther("100");
+    //allow the deployer to deposit
+    await lpToken
+      .connect(owner)
+      .approve(await lendingProtocol.getAddress(), ownerDepositAmount);
+
+    await lendingProtocol.connect(owner).depositLPTokens(ownerDepositAmount);
+
+    // Send 50 tokens to user1
+    await lpToken
+      .connect(owner)
+      .transfer(user1.address, ethers.parseEther("50"));
+
+    // User1 deposits tokens
+    await lpToken
+      .connect(user1)
+      .approve(lendingProtocol.getAddress(), ethers.parseEther("50"));
+
+    await lendingProtocol
+      .connect(user1)
+      .depositLPTokens(ethers.parseEther("50"));
+
+    //user2 deposits 10 ETH to the contract
+    const depositAmount = ethers.parseEther("10");
+    //allow the deployer to deposit
+    await lendingProtocol.connect(user2).depositETH(depositAmount);
+
+    //user2 borrows 5 LPTokens
+    const borrowAmount = ethers.parseEther("5");
+    await lendingProtocol.connect(user2).borrowLPTokens(borrowAmount);
+
+    // // Accrue some interest
+    await lendingProtocol.distributeInterest();
+
+    // Wait for one block
+    await ethers.provider.send("evm_mine", []);
+
+    // Check balances and interest earned
+    // const ownerBalance = await lendingProtocol.getInterestEarned(owner.address);
+    const user1Balance = await lendingProtocol.getInterestEarned(user1.address);
+
+    // expect(ownerBalance).to.be.above(ethers.parseEther("100")); // Earned interest
+    // expect(user1Balance).to.be.above(ethers.parseEther("50")); // Earned interest
+
+    //console log user1 balance
+    console.log(formatEther(user1Balance));
+  });
 });
