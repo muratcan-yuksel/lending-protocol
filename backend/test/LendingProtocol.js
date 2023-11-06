@@ -148,20 +148,23 @@ describe("LendingProtocol", function () {
     const borrowAmount = ethers.parseEther("5");
     await lendingProtocol.connect(user2).borrowLPTokens(borrowAmount);
 
-    // // Accrue some interest
+    // Distribute interest
     await lendingProtocol.distributeInterest();
 
-    // Wait for one block
-    await ethers.provider.send("evm_mine", []);
+    // Fast forward 3 weeks
+    for (let i = 0; i < 1; i++) {
+      await ethers.provider.send("evm_increaseTime", [7 * 24 * 60 * 60]);
 
-    // Check balances and interest earned
-    // const ownerBalance = await lendingProtocol.getInterestEarned(owner.address);
-    const user1Balance = await lendingProtocol.getInterestEarned(user1.address);
+      await lendingProtocol.distributeInterest();
+    }
 
-    // expect(ownerBalance).to.be.above(ethers.parseEther("100")); // Earned interest
-    // expect(user1Balance).to.be.above(ethers.parseEther("50")); // Earned interest
+    // Get updated balances
+    const interestEarned = await lendingProtocol.getInterestEarned(
+      owner.address
+    );
 
-    //console log user1 balance
-    console.log(formatEther(user1Balance));
+    // Assert interest increased
+    expect(interestEarned).to.be.gt(0);
+    console.log(formatEther(interestEarned));
   });
 });

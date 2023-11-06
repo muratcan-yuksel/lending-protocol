@@ -28,6 +28,13 @@ contract LendingProtocol {
         interestRate = _interestRate;
     }
 
+    modifier distributeInterestIfRequired() {
+        if (block.timestamp >= lastDistributed + 1 weeks) {
+            _;
+            lastDistributed = block.timestamp;
+        }
+    }
+
     function getTotalLPTokens() public view returns (uint256) {
         return lpToken.totalSupply();
     }
@@ -131,7 +138,7 @@ contract LendingProtocol {
     }
 
     // Distribute interest to lenders
-    function distributeInterest() public {
+    function distributeInterest() public distributeInterestIfRequired {
         //unchecked for under or overflowing problems
         unchecked {
             // Calculate total interest
