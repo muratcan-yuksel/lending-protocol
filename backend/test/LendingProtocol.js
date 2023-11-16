@@ -167,4 +167,5 @@ describe("LendingProtocol", function () {
     expect(interestEarned).to.be.gt(0);
     console.log(formatEther(interestEarned));
   });
+  it("user1 should be able to withdraw interest", async function () {});
 });

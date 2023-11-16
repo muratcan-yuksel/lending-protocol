@@ -169,6 +169,25 @@ contract LendingProtocol {
         }
     }
 
+    //add withdraw interest function
+
+    function withdrawInterest() external {
+        //should be only called by a lender or the owner
+        require(lendersInterestBalance[msg.sender] > 0, "Nothing to withdraw");
+
+        distributeInterest();
+        //get the user's interest balance
+        uint256 userInterest = lendersInterestBalance[msg.sender];
+        //send the interest to the user
+        require(
+            lpToken.transfer(msg.sender, userInterest),
+            "Token transfer failed"
+        );
+        lendersInterestBalance[msg.sender] = 0;
+        //update the total interest
+        totalInterest -= userInterest;
+    }
+
     fallback() external payable {
         depositETH(msg.value);
     }
