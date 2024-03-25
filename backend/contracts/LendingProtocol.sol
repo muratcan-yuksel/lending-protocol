@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract LendingProtocol is ReentrancyGuard {
     //variables
+
     //put lptoken contract into a variable
     LPToken public lpToken;
     uint256 public totalLiquidity;
@@ -19,4 +20,23 @@ contract LendingProtocol is ReentrancyGuard {
     address public oracle;
 
     //mappings
+
+    mapping(address => Deposit) public deposits;
+
+    //structs
+    //ETH deposits
+    struct Deposit {
+        uint256 amount;
+        uint256 collateralValue; //USD value of deposited ETH at the time of deposit.
+        uint256 depositTime;
+    }
+
+    //functions
+
+    function depositETH(uint256 _amount) public payable {
+        require(_amount > 0, "Amount must be greater than 0");
+
+        // Fetch ETH price from Chainlink oracle
+        // Calculate USD value of deposited ETH
+    }
 }
