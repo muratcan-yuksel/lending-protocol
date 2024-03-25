@@ -16,6 +16,8 @@ contract LendingProtocol is ReentrancyGuard {
     uint256 public collateralizationRatio;
     uint8 public liquidationThreshold = 80;
     uint8 public interestRate; //annual interest rate (in percentage)
+    //mock ETH price
+    uint16 public ethPrice = 3000;
     //oracle address
     address public oracle;
 
@@ -36,7 +38,19 @@ contract LendingProtocol is ReentrancyGuard {
     function depositETH(uint256 _amount) public payable {
         require(_amount > 0, "Amount must be greater than 0");
 
-        // Fetch ETH price from Chainlink oracle
+        // Normally we'd fetch ETH price from Chainlink oracle
+        //But here we'll use a mock value
+
         // Calculate USD value of deposited ETH
+        uint256 depositValueUSD = _amount * ethPrice;
+
+        //1 LPT= 1 USD
+        //1 ETH = 3000 USD
+        uint256 lptAmount = depositValueUSD;
+
+        // Mint LP tokens
+        //here we're calling our own custom "mint" function in LPToken.sol contract
+        //which states that only the owner, that is, this very contract, can mint LPTokens
+        lpToken.mint(msg.sender, lptAmount);
     }
 }
