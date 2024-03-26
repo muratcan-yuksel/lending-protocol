@@ -11,7 +11,7 @@ contract LendingProtocol is ReentrancyGuard {
 
     //put lptoken contract into a variable
     LPToken public lpToken;
-    uint256 public totalLiquidity;
+    uint256 public totalLiquidity = lpToken.balanceOf(address(this));
     uint256 public totalEthLocked;
     uint256 public collateralizationRatio;
     uint8 public liquidationThreshold = 80;
@@ -41,18 +41,19 @@ contract LendingProtocol is ReentrancyGuard {
         // Normally we'd fetch ETH price from Chainlink oracle
         //But here we'll use a mock value
 
+        //
+
         // Calculate USD value of deposited ETH
         //Question: Does the amount comes in ETH or in wei? What's the conversion?
-        uint256 depositValueUSD = _amount * ethPrice;
+        uint256 ethAmount = _amount / 1e18; // Divide by 1e18 (10^18) to convert wei to ETH
+        uint256 depositValueUSD = ethAmount * ethPrice;
 
         //1 LPT= 1 USD
         //1 ETH = 3000 USD
         uint256 lptAmount = depositValueUSD;
 
-        // Mint LP tokens
-        //here we're calling our own custom "mint" function in LPToken.sol contract
-        //which states that only the owner, that is, this very contract, can mint LPTokens
-        lpToken.mint(msg.sender, lptAmount);
+        // send the user LPTokens using ERC20's transfer function
+        lpToken.transfer(msg.sender, lptAmount);
 
         //update user's deposit information
         deposits[msg.sender].amount += _amount;
@@ -60,7 +61,7 @@ contract LendingProtocol is ReentrancyGuard {
         deposits[msg.sender].depositTime = block.timestamp;
 
         //update totalLiquidity
-        totalLiquidity += lptAmount;
+        totalLiquidity -= lptAmount;
         //update totalEthLocked
         totalEthLocked += _amount;
     }
