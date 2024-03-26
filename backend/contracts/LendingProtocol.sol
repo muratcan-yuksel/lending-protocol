@@ -42,6 +42,7 @@ contract LendingProtocol is ReentrancyGuard {
         //But here we'll use a mock value
 
         // Calculate USD value of deposited ETH
+        //Question: Does the amount comes in ETH or in wei? What's the conversion?
         uint256 depositValueUSD = _amount * ethPrice;
 
         //1 LPT= 1 USD
@@ -52,5 +53,15 @@ contract LendingProtocol is ReentrancyGuard {
         //here we're calling our own custom "mint" function in LPToken.sol contract
         //which states that only the owner, that is, this very contract, can mint LPTokens
         lpToken.mint(msg.sender, lptAmount);
+
+        //update user's deposit information
+        deposits[msg.sender].amount += _amount;
+        deposits[msg.sender].collateralValue += depositValueUSD;
+        deposits[msg.sender].depositTime = block.timestamp;
+
+        //update totalLiquidity
+        totalLiquidity += lptAmount;
+        //update totalEthLocked
+        totalEthLocked += _amount;
     }
 }
