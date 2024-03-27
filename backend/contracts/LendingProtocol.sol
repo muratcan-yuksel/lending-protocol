@@ -35,10 +35,16 @@ contract LendingProtocol is ReentrancyGuard {
 
     constructor(address _lpToken) {
         lpToken = LPToken(_lpToken); // Set the LPToken address during deployment
-        totalLiquidity = lpToken.balanceOf(address(this)); // Assuming zero initial liquidity
+        totalLiquidity = 0; // Assuming zero initial liquidity
     }
 
     //functions
+
+    //view functions
+    function getTotalLiquidity() public view returns (uint256) {
+        // Recalculate totalLiquidity every time this function is called
+        return lpToken.balanceOf(address(this));
+    }
 
     function depositETH(uint256 _amount) public payable {
         require(_amount > 0, "Amount must be greater than 0");

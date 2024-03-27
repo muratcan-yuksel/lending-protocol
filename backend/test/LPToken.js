@@ -5,7 +5,7 @@ const {
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 
-let token, owner, lendingProtocolAddress, lendingProtocol;
+let token, owner, user1, lendingProtocolAddress, lendingProtocol;
 
 beforeEach(async function () {
   // Deploy LPToken contract
@@ -21,7 +21,7 @@ beforeEach(async function () {
   lendingProtocolAddress = await lendingProtocol.getAddress();
 
   // Get signers
-  [owner] = await ethers.getSigners();
+  [owner, user1] = await ethers.getSigners();
 });
 
 it("Has correct name and symbol", async function () {
@@ -33,4 +33,8 @@ it("mints 1000000 tokens to the deployer", async function () {
   //but convert them to wei also
   const balance = await token.balanceOf(owner.address);
   expect(balance).to.equal(ethers.parseEther("1000000"));
+
+  //for the user1 now
+  const balance1 = await token.balanceOf(user1.address);
+  expect(balance1).to.equal(0);
 });
