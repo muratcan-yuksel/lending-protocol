@@ -6,7 +6,7 @@ import "hardhat/console.sol";
 import "./LPToken.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract LendingProtocol is ReentrancyGuard {
+contract OLD2LendingProtocol is ReentrancyGuard {
     LPToken public lpToken;
 
     uint256 public totalLpTokens;
@@ -28,6 +28,7 @@ contract LendingProtocol is ReentrancyGuard {
 
     constructor(address _lpTokenAddress, uint16 _interestRate) {
         require(_interestRate <= MAX_INTEREST, "Initial rate exceeds max");
+        //the following line creates a reference to the LPToken contract by feeding the variable the already deployed contract address
         lpToken = LPToken(_lpTokenAddress);
         owner = msg.sender;
         interestRate = _interestRate;

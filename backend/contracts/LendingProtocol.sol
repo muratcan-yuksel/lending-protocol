@@ -11,7 +11,7 @@ contract LendingProtocol is ReentrancyGuard {
 
     //put lptoken contract into a variable
     LPToken public lpToken;
-    uint256 public totalLiquidity = lpToken.balanceOf(address(this));
+    uint256 public totalLiquidity; //lpToken.balanceOf(address(this));
     uint256 public totalEthLocked;
     uint256 public collateralizationRatio;
     uint8 public liquidationThreshold = 80;
@@ -31,6 +31,11 @@ contract LendingProtocol is ReentrancyGuard {
         uint256 amount;
         uint256 collateralValue; //USD value of deposited ETH at the time of deposit.
         uint256 depositTime;
+    }
+
+    constructor(address _lpToken) {
+        lpToken = LPToken(_lpToken); // Set the LPToken address during deployment
+        totalLiquidity = lpToken.balanceOf(address(this)); // Assuming zero initial liquidity
     }
 
     //functions
