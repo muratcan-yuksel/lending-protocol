@@ -66,5 +66,22 @@ describe("LendingProtocol", function () {
     // - Assert relevant events emitted by the contract
   });
 
-  //these brackets belong to describe statement
+  it("user should be able to deposit ETH to the protocol", async function () {
+    //  connect to user1 and deposit 1 eth to the protocol
+    const depositAmount = 10000;
+    await lendingProtocol
+      .connect(user1)
+      .depositETH(depositAmount, { value: depositAmount });
+
+    //  Wait for one block
+    await ethers.provider.send("evm_mine", []);
+
+    const ethInPool = await lendingProtocol.getTotalEthLocked();
+
+    await ethers.provider.send("evm_mine", []);
+
+    expect(ethInPool).to.equal(depositAmount);
+  });
+
+  //  these brackets belong to describe statement
 });
