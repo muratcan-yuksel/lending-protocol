@@ -86,6 +86,5 @@ describe("LendingProtocol", function () {
       initialEthInPoolBigInt + BigInt(depositAmount)
     );
   });
-
   //  these brackets belong to describe statement
 });
