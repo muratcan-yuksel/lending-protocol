@@ -67,20 +67,24 @@ describe("LendingProtocol", function () {
   });
 
   it("user should be able to deposit ETH to the protocol", async function () {
-    //  connect to user1 and deposit 1 eth to the protocol
-    const depositAmount = 10000;
+    // Connect to user1 and deposit 10 ETH to the protocol
+    const initialEthInPool = await lendingProtocol.getTotalEthLocked(); // Get initial ETH in pool
+
+    const depositAmount = 10;
     await lendingProtocol
       .connect(user1)
       .depositETH(depositAmount, { value: depositAmount });
 
-    //  Wait for one block
-    await ethers.provider.send("evm_mine", []);
-
     const ethInPool = await lendingProtocol.getTotalEthLocked();
 
-    await ethers.provider.send("evm_mine", []);
+    // Convert ethInPool to BigInt
+    const initialEthInPoolBigInt = BigInt(initialEthInPool);
+    const ethInPoolBigInt = BigInt(ethInPool);
 
-    expect(ethInPool).to.equal(depositAmount);
+    // Check if the ETH in pool has increased by the deposit amount
+    expect(ethInPoolBigInt).to.equal(
+      initialEthInPoolBigInt + BigInt(depositAmount)
+    );
   });
 
   //  these brackets belong to describe statement
