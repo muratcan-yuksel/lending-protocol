@@ -40,4 +40,31 @@ describe("LendingProtocol", function () {
       await lendingProtocol.getTotalLiquidity();
     expect(totalLPtokensViaFunctionCall).to.equal(ethers.parseEther("500000"));
   });
+  //testing the depositETH function
+  it("does not accept zero amount", async function () {
+    await expect(
+      lendingProtocol.connect(user1).depositETH(0)
+    ).to.be.revertedWith("Amount must be greater than 0");
+  });
+
+  it("accepts a non-zero ETH deposit", async function () {
+    const amountToDeposit = 10; // Or any other non-zero amount
+
+    // Use try-catch to handle potential errors and ensure a successful transaction
+    try {
+      await lendingProtocol.connect(user1).depositETH(amountToDeposit);
+    } catch (error) {
+      // If there's an error, fail the test
+      console.error("Transaction failed:", error);
+      return expect(false).to.be.true; // Explicitly fail the test
+    }
+
+    // If the transaction succeeds, no error will be thrown, and the test will continue
+
+    // Verify that the deposit was successful (optional):
+    // - Check updated ETH balance or LP token balance
+    // - Assert relevant events emitted by the contract
+  });
+
+  //these brackets belong to describe statement
 });

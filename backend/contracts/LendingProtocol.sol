@@ -54,7 +54,7 @@ contract LendingProtocol is ReentrancyGuard {
 
         //
 
-        // Calculate USD value of deposited ETH
+        // Calculate USD value of deposited ETH (ETH price being 3k)
         //Question: Does the amount comes in ETH or in wei? What's the conversion?
         uint256 ethAmount = _amount / 1e18; // Divide by 1e18 (10^18) to convert wei to ETH
         uint256 depositValueUSD = ethAmount * ethPrice;
