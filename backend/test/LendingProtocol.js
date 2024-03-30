@@ -33,6 +33,12 @@ describe("LendingProtocol", function () {
       .transfer(lendingProtocolAddress, amountToSend);
   }
 
+  //we're writing this as a function so that we can reuse it in our test cases
+  async function depositETH(user, amount) {
+    // const depositAmount = 10;
+    await lendingProtocol.connect(user).depositETH(amount, { value: amount });
+  }
+
   beforeEach(async function () {
     //call the setup function
     await setupContracts();
@@ -48,17 +54,17 @@ describe("LendingProtocol", function () {
   });
   //testing the depositETH function
   it("does not accept zero amount", async function () {
-    await expect(
-      lendingProtocol.connect(user1).depositETH(0)
-    ).to.be.revertedWith("Amount must be greater than 0");
+    await expect(depositETH(user1, 0)).to.be.revertedWith(
+      "Amount must be greater than 0"
+    );
   });
 
-  it("accepts a non-zero ETH deposit", async function () {
+  it("accepts a non-zero amount", async function () {
     const amountToDeposit = 10; // Or any other non-zero amount
 
     // Use try-catch to handle potential errors and ensure a successful transaction
     try {
-      await lendingProtocol.connect(user1).depositETH(amountToDeposit);
+      await depositETH(user1, amountToDeposit);
     } catch (error) {
       // If there's an error, fail the test
       console.error("Transaction failed:", error);
@@ -71,12 +77,6 @@ describe("LendingProtocol", function () {
     // - Check updated ETH balance or LP token balance
     // - Assert relevant events emitted by the contract
   });
-  //we're writing this as a function so that we can reuse it in our test cases
-
-  async function depositETH(user, amount) {
-    // const depositAmount = 10;
-    await lendingProtocol.connect(user).depositETH(amount, { value: amount });
-  }
 
   it("user should be able to deposit ETH to the protocol and the ETH pool in the protocol increases", async function () {
     // Connect to user1 and deposit 10 ETH to the protocol
@@ -96,5 +96,36 @@ describe("LendingProtocol", function () {
       initialEthInPoolBigInt + BigInt(depositAmount)
     );
   });
+
+  it("gives the user correct amount of LP tokens after depositing ETH", async function () {
+    // Connect to user1 and deposit 10 ETH to the protocol
+    //remember we defined the "token" as the LPToken contract
+    const initialLPBalance = await token.balanceOf(user1.address);
+    await depositETH(user1, 1);
+
+    //wait for one block
+    await ethers.provider.send("evm_mine", []);
+
+    const finalLPBalance = await token.balanceOf(user1.address);
+
+    //1 ETH is 3000 LPTokens in our scenario
+    const expectedLPBalance = 3000;
+
+    expect(finalLPBalance).to.equal(
+      initialLPBalance + BigInt(expectedLPBalance)
+    );
+  });
+
+  it("changes the total liquidity after user deposits ETH", async function () {
+    // Connect to user1 and deposit 10 ETH to the protocol
+    const initialTotalLiquidity = await lendingProtocol.getTotalLiquidity();
+    await depositETH(user1, 1);
+    //wait for one block
+    await ethers.provider.send("evm_mine", []);
+    //considering 1 eth is 3000 LPT
+    const finalTotalLiquidity = await lendingProtocol.getTotalLiquidity();
+    expect(finalTotalLiquidity).to.equal(initialTotalLiquidity - BigInt(3000));
+  });
+
   //  these brackets belong to describe statement
 });

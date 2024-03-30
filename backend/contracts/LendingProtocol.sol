@@ -65,23 +65,26 @@ contract LendingProtocol is ReentrancyGuard {
         // Calculate USD value of deposited ETH (ETH price being 3k)
         //QTHe amount comes
         //if we don't calculate it here, but we just want testing in local, we can use sth like     const depositAmount = ethers.parseEther("1"); in hardhat testing
-        uint256 ethAmount = _amount / 1e18; // Divide by 1e18 (10^18) to convert wei to ETH
+        uint256 ethAmount = _amount; // Divide by 1e18 (10^18) to convert wei to ETH
+        // console.log("ETH amount:", ethAmount);
+        // console.log("deposited amount", _amount);
         uint256 depositValueUSD = ethAmount * ethPrice;
 
-        //1 LPT= 1 USD
-        //1 ETH = 3000 USD
+        // //1 LPT= 1 USD
+        // //1 ETH = 3000 USD
         uint256 lptAmount = depositValueUSD;
+        console.log("LPToken amount to be minted:", lptAmount);
 
-        // send the user LPTokens using ERC20's transfer function
+        // // send the user LPTokens using ERC20's transfer function
         lpToken.transfer(msg.sender, lptAmount);
 
-        //update user's deposit information
+        // //update user's deposit information
         deposits[msg.sender].amount += _amount;
         deposits[msg.sender].collateralValue += depositValueUSD;
         deposits[msg.sender].depositTime = block.timestamp;
 
-        //update totalLiquidity
-        totalLiquidity -= lptAmount;
+        // //update totalLiquidity
+        // totalLiquidity -= lptAmount;
     }
 
     function deposit() public payable {}
