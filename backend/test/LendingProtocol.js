@@ -117,7 +117,7 @@ describe("LendingProtocol", function () {
   });
 
   it("changes the total liquidity after user deposits ETH", async function () {
-    // Connect to user1 and deposit 10 ETH to the protocol
+    // Connect to user1 and deposit 1 ETH to the protocol
     const initialTotalLiquidity = await lendingProtocol.getTotalLiquidity();
     await depositETH(user1, 1);
     //wait for one block
@@ -125,6 +125,17 @@ describe("LendingProtocol", function () {
     //considering 1 eth is 3000 LPT
     const finalTotalLiquidity = await lendingProtocol.getTotalLiquidity();
     expect(finalTotalLiquidity).to.equal(initialTotalLiquidity - BigInt(2400));
+  });
+
+  it("updates user/borrower info", async function () {
+    // Connect to user1 and deposit 1 ETH to the protocol
+    await depositETH(user1, 1);
+    //wait for one block
+    await ethers.provider.send("evm_mine", []);
+    //considering 1 eth is 3000 LPT and the collateral ratio is 80
+    const borrower = await lendingProtocol.getBorrowerInfo(user1.address);
+    expect(borrower.ehtDeposited).to.equal(1);
+    expect(borrower.collateralValue).to.equal(2400);
   });
 
   //  these brackets belong to describe statement

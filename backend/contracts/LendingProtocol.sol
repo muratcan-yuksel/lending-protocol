@@ -26,12 +26,15 @@ contract LendingProtocol is ReentrancyGuard {
 
     //mappings
 
-    mapping(address => Deposit) public deposits;
+    //borrowers give ETH and borrow LPT
+    //lenders lend LPT and earn interest
+
+    mapping(address => BorrowerInfo) public borrowers;
 
     //structs
     //ETH deposits
-    struct Deposit {
-        uint256 amount;
+    struct BorrowerInfo {
+        uint256 ehtDeposited;
         uint256 collateralValue; //USD value of deposited ETH at the time of deposit.
         uint256 depositTime;
     }
@@ -55,6 +58,12 @@ contract LendingProtocol is ReentrancyGuard {
         uint256 ethBalance = address(this).balance;
         console.log("ETH balance of the contract:", ethBalance);
         return ethBalance;
+    }
+
+    function getBorrowerInfo(
+        address _user
+    ) public view returns (BorrowerInfo memory) {
+        return borrowers[_user];
     }
 
     //helper functions for depositETH function starts
@@ -90,10 +99,10 @@ contract LendingProtocol is ReentrancyGuard {
         lpToken.transfer(_user, lptAmount);
     }
 
-    function updateUserInfo(address _user, uint256 _amount) internal {
-        deposits[_user].amount += _amount;
-        deposits[_user].collateralValue += (calculateLPTokensToUser(_amount));
-        deposits[_user].depositTime = block.timestamp;
+    function updateBorrowerInfo(address _user, uint256 _amount) internal {
+        borrowers[_user].ehtDeposited += _amount;
+        borrowers[_user].collateralValue += (calculateLPTokensToUser(_amount));
+        borrowers[_user].depositTime = block.timestamp;
     }
 
     //helper functions for depositETH function ends
@@ -106,10 +115,10 @@ contract LendingProtocol is ReentrancyGuard {
         transferLPTtoUser(msg.sender, _amount);
 
         //call function to update user's deposit information
-        updateUserInfo(msg.sender, _amount);
+        updateBorrowerInfo(msg.sender, _amount);
     }
 
-    function deposit() public payable {}
+    function depositLPT() public payable {}
 
     fallback() external payable {
         depositETH(msg.value);
