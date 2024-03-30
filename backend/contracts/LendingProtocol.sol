@@ -15,7 +15,7 @@ contract LendingProtocol is ReentrancyGuard {
     //put lptoken contract into a variable
     LPToken public lpToken;
     uint256 public totalLiquidity; //lpToken.balanceOf(address(this));
-    uint256 public totalEthLocked;
+    // uint256 public totalEthLocked; //unncessary in our case since we can query the contract balance directly
     uint256 public collateralizationRatio;
     uint8 public liquidationThreshold = 80;
     uint8 public interestRate; //annual interest rate (in percentage)
@@ -59,31 +59,29 @@ contract LendingProtocol is ReentrancyGuard {
     function depositETH(uint256 _amount) public payable {
         require(_amount > 0, "Amount must be greater than 0");
 
-        // // Normally we'd fetch ETH price from Chainlink oracle
-        // //But here we'll use a mock value
+        // Normally we'd fetch ETH price from Chainlink oracle
+        //But here we'll use a mock value
 
-        // // Calculate USD value of deposited ETH (ETH price being 3k)
-        // //QTHe amount comes
-        // //if we don't calculate it here, but we just want testing in local, we can use sth like     const depositAmount = ethers.parseEther("1"); in hardhat testing
-        // uint256 ethAmount = _amount / 1e18; // Divide by 1e18 (10^18) to convert wei to ETH
-        // uint256 depositValueUSD = ethAmount * ethPrice;
+        // Calculate USD value of deposited ETH (ETH price being 3k)
+        //QTHe amount comes
+        //if we don't calculate it here, but we just want testing in local, we can use sth like     const depositAmount = ethers.parseEther("1"); in hardhat testing
+        uint256 ethAmount = _amount / 1e18; // Divide by 1e18 (10^18) to convert wei to ETH
+        uint256 depositValueUSD = ethAmount * ethPrice;
 
-        // //1 LPT= 1 USD
-        // //1 ETH = 3000 USD
-        // uint256 lptAmount = depositValueUSD;
+        //1 LPT= 1 USD
+        //1 ETH = 3000 USD
+        uint256 lptAmount = depositValueUSD;
 
-        // // send the user LPTokens using ERC20's transfer function
-        // lpToken.transfer(msg.sender, lptAmount);
+        // send the user LPTokens using ERC20's transfer function
+        lpToken.transfer(msg.sender, lptAmount);
 
-        // //update user's deposit information
-        // deposits[msg.sender].amount += _amount;
-        // deposits[msg.sender].collateralValue += depositValueUSD;
-        // deposits[msg.sender].depositTime = block.timestamp;
+        //update user's deposit information
+        deposits[msg.sender].amount += _amount;
+        deposits[msg.sender].collateralValue += depositValueUSD;
+        deposits[msg.sender].depositTime = block.timestamp;
 
-        // //update totalLiquidity
-        // totalLiquidity -= lptAmount;
-        // //update totalEthLocked
-        // totalEthLocked += _amount;
+        //update totalLiquidity
+        totalLiquidity -= lptAmount;
     }
 
     function deposit() public payable {}

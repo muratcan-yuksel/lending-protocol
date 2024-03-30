@@ -9,7 +9,8 @@ describe("LendingProtocol", function () {
   let token;
   let deployer, user1, user2;
 
-  beforeEach(async function () {
+  // Shared setup function**
+  async function setupContracts() {
     // Get signers
     [deployer, user1, user2] = await ethers.getSigners();
 
@@ -30,6 +31,11 @@ describe("LendingProtocol", function () {
     await token
       .connect(deployer)
       .transfer(lendingProtocolAddress, amountToSend);
+  }
+
+  beforeEach(async function () {
+    //call the setup function
+    await setupContracts();
   });
 
   it("the protocol should have 500000 tokens in the pool", async function () {
@@ -65,15 +71,19 @@ describe("LendingProtocol", function () {
     // - Check updated ETH balance or LP token balance
     // - Assert relevant events emitted by the contract
   });
+  //we're writing this as a function so that we can reuse it in our test cases
 
-  it("user should be able to deposit ETH to the protocol", async function () {
+  async function depositETH(user, amount) {
+    // const depositAmount = 10;
+    await lendingProtocol.connect(user).depositETH(amount, { value: amount });
+  }
+
+  it("user should be able to deposit ETH to the protocol and the ETH pool in the protocol increases", async function () {
     // Connect to user1 and deposit 10 ETH to the protocol
     const initialEthInPool = await lendingProtocol.getTotalEthLocked(); // Get initial ETH in pool
 
     const depositAmount = 10;
-    await lendingProtocol
-      .connect(user1)
-      .depositETH(depositAmount, { value: depositAmount });
+    await depositETH(user1, depositAmount); // Call the depositETH function with user1 and deposit amount
 
     const ethInPool = await lendingProtocol.getTotalEthLocked();
 
