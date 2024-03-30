@@ -56,6 +56,8 @@ contract LendingProtocol is ReentrancyGuard {
         return ethBalance;
     }
 
+    //helper functions for depositETH function starts
+
     function convertETHtoLPT(
         uint256 _ethAmount
     ) internal view returns (uint256) {
@@ -81,6 +83,14 @@ contract LendingProtocol is ReentrancyGuard {
         lpToken.transfer(_user, lptAmount);
     }
 
+    function updateUserInfo(address _user, uint256 _amount) internal {
+        deposits[_user].amount += _amount;
+        deposits[_user].collateralValue += (convertETHtoLPT(_amount));
+        deposits[_user].depositTime = block.timestamp;
+    }
+
+    //helper functions for depositETH function ends
+
     function depositETH(uint256 _amount) public payable {
         require(_amount > 0, "Amount must be greater than 0");
         // console.log("deposited amount", _amount);
@@ -88,13 +98,8 @@ contract LendingProtocol is ReentrancyGuard {
         //call function to transfer LPTokens to user
         transferLPTtoUser(msg.sender, _amount);
 
-        //update user's deposit information
-        deposits[msg.sender].amount += _amount;
-        deposits[msg.sender].collateralValue += (convertETHtoLPT(_amount));
-        deposits[msg.sender].depositTime = block.timestamp;
-
-        //update totalLiquidity
-        // //totalLiquidity -= lptAmount;
+        //call function to update user's deposit information
+        updateUserInfo(msg.sender, _amount);
     }
 
     function deposit() public payable {}
