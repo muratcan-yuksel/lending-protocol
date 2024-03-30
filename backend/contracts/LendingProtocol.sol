@@ -68,25 +68,33 @@ contract LendingProtocol is ReentrancyGuard {
         return depositValueUSD;
     }
 
+    function transferLPTtoUser(
+        address _user,
+        uint256 _ethAmountDeposited
+    ) internal {
+        //1 LPT= 1 USD
+        //1 ETH = 3000 USD
+        uint256 lptAmount = (convertETHtoLPT(_ethAmountDeposited));
+        console.log("LPToken amount to be minted:", lptAmount);
+
+        // send the user LPTokens using ERC20's transfer function
+        lpToken.transfer(_user, lptAmount);
+    }
+
     function depositETH(uint256 _amount) public payable {
         require(_amount > 0, "Amount must be greater than 0");
         // console.log("deposited amount", _amount);
 
-        // //1 LPT= 1 USD
-        // //1 ETH = 3000 USD
-        uint256 lptAmount = (convertETHtoLPT(_amount));
-        console.log("LPToken amount to be minted:", lptAmount);
+        //call function to transfer LPTokens to user
+        transferLPTtoUser(msg.sender, _amount);
 
-        // // send the user LPTokens using ERC20's transfer function
-        lpToken.transfer(msg.sender, lptAmount);
-
-        // //update user's deposit information
+        //update user's deposit information
         deposits[msg.sender].amount += _amount;
         deposits[msg.sender].collateralValue += (convertETHtoLPT(_amount));
         deposits[msg.sender].depositTime = block.timestamp;
 
-        // //update totalLiquidity
-        //totalLiquidity -= lptAmount;
+        //update totalLiquidity
+        // //totalLiquidity -= lptAmount;
     }
 
     function deposit() public payable {}
