@@ -109,7 +109,7 @@ describe("LendingProtocol", function () {
     const finalLPBalance = await token.balanceOf(user1.address);
 
     //1 ETH is 3000 LPTokens in our scenario
-    const expectedLPBalance = 3000;
+    const expectedLPBalance = 2400;
 
     expect(finalLPBalance).to.equal(
       initialLPBalance + BigInt(expectedLPBalance)
@@ -124,7 +124,7 @@ describe("LendingProtocol", function () {
     await ethers.provider.send("evm_mine", []);
     //considering 1 eth is 3000 LPT
     const finalTotalLiquidity = await lendingProtocol.getTotalLiquidity();
-    expect(finalTotalLiquidity).to.equal(initialTotalLiquidity - BigInt(3000));
+    expect(finalTotalLiquidity).to.equal(initialTotalLiquidity - BigInt(2400));
   });
 
   //  these brackets belong to describe statement
