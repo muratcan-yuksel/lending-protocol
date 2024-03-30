@@ -56,23 +56,25 @@ contract LendingProtocol is ReentrancyGuard {
         return ethBalance;
     }
 
-    function depositETH(uint256 _amount) public payable {
-        require(_amount > 0, "Amount must be greater than 0");
-
+    function convertETHtoLPT(
+        uint256 _ethAmount
+    ) internal view returns (uint256) {
         // Normally we'd fetch ETH price from Chainlink oracle
         //But here we'll use a mock value
 
         // Calculate USD value of deposited ETH (ETH price being 3k)
-        //QTHe amount comes
-        //if we don't calculate it here, but we just want testing in local, we can use sth like     const depositAmount = ethers.parseEther("1"); in hardhat testing
-        uint256 ethAmount = _amount; // Divide by 1e18 (10^18) to convert wei to ETH
-        // console.log("ETH amount:", ethAmount);
+        // console.log("ETH amount:", _ethAmount);
+        uint256 depositValueUSD = _ethAmount * ethPrice;
+        return depositValueUSD;
+    }
+
+    function depositETH(uint256 _amount) public payable {
+        require(_amount > 0, "Amount must be greater than 0");
         // console.log("deposited amount", _amount);
-        uint256 depositValueUSD = ethAmount * ethPrice;
 
         // //1 LPT= 1 USD
         // //1 ETH = 3000 USD
-        uint256 lptAmount = depositValueUSD;
+        uint256 lptAmount = (convertETHtoLPT(_amount));
         console.log("LPToken amount to be minted:", lptAmount);
 
         // // send the user LPTokens using ERC20's transfer function
@@ -80,11 +82,11 @@ contract LendingProtocol is ReentrancyGuard {
 
         // //update user's deposit information
         deposits[msg.sender].amount += _amount;
-        deposits[msg.sender].collateralValue += depositValueUSD;
+        deposits[msg.sender].collateralValue += (convertETHtoLPT(_amount));
         deposits[msg.sender].depositTime = block.timestamp;
 
         // //update totalLiquidity
-        // totalLiquidity -= lptAmount;
+        //totalLiquidity -= lptAmount;
     }
 
     function deposit() public payable {}
