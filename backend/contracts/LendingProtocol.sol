@@ -5,11 +5,8 @@ pragma solidity ^0.8.9;
 import "hardhat/console.sol";
 import "./LPToken.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-//import safemath
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract LendingProtocol is ReentrancyGuard {
-    using SafeMath for uint256; //use safemath for all uin256 variables
     //variables
 
     //put lptoken contract into a variable
@@ -80,7 +77,7 @@ contract LendingProtocol is ReentrancyGuard {
         //only 80% of the deposited ETH can be used by the user
         console.log("Deposit value in USD:", depositValueUSD);
         //lptAmount returns 0 if I don't use safemath
-        uint256 lptAmount = depositValueUSD.mul(collateralRatio).div(100);
+        uint256 lptAmount = (depositValueUSD * collateralRatio) / 100;
         console.log("LPTokens to be minted:", lptAmount);
         console.log("collateral ratio:", collateralRatio);
         return lptAmount;
@@ -118,7 +115,7 @@ contract LendingProtocol is ReentrancyGuard {
         updateBorrowerInfo(msg.sender, _amount);
     }
 
-    function depositLPT() public payable {}
+    function depositLPT() public {}
 
     fallback() external payable {
         depositETH(msg.value);

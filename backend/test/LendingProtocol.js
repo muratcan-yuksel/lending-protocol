@@ -138,5 +138,7 @@ describe("LendingProtocol", function () {
     expect(borrower.collateralValue).to.equal(2400);
   });
 
+  //depositETH tests ends
+
   //  these brackets belong to describe statement
 });
