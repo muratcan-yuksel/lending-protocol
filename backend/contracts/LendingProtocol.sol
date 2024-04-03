@@ -15,11 +15,22 @@ contract LendingProtocol is ReentrancyGuard {
     // uint256 public totalEthLocked; //unncessary in our case since we can query the contract balance directly
     uint256 public collateralRatio;
     uint8 public liquidationThreshold = 80;
-    uint8 public interestRate; //annual interest rate (in percentage)
+    uint8 public interestRate; //weekly interest rate (in percentage)
     //mock ETH price
     uint16 public ethPrice = 3000;
     //oracle address
     address public oracle;
+
+    //events
+    event DepositedLPT(address indexed user, uint256 amountLPT);
+    event DepositedETH(address indexed user, uint256 amountETH);
+    event WithdrawnLPT(address indexed user, uint256 amountLPT);
+    event WithdrawnETH(address indexed user, uint256 amountETH);
+    event BorrowedETH(address indexed user, uint256 amountETH);
+    event BorrowedLPT(address indexed user, uint256 amountLPT);
+    event RepaidETH(address indexed user, uint256 amountETH);
+    event RepaidLPT(address indexed user, uint256 amountLPT);
+    event Liquidated(address indexed user, uint256 amountETH);
 
     //mappings
 
@@ -27,12 +38,18 @@ contract LendingProtocol is ReentrancyGuard {
     //lenders lend LPT and earn interest
 
     mapping(address => BorrowerInfo) public borrowers;
+    mapping(address => LenderInfo) public lenders;
 
     //structs
-    //ETH deposits
     struct BorrowerInfo {
         uint256 ehtDeposited;
         uint256 collateralValue; //USD value of deposited ETH at the time of deposit.
+        uint256 depositTime;
+    }
+
+    struct LenderInfo {
+        uint256 amountLent;
+        uint256 interestEarned;
         uint256 depositTime;
     }
 
@@ -40,6 +57,7 @@ contract LendingProtocol is ReentrancyGuard {
         lpToken = LPToken(_lpToken); // Set the LPToken address during deployment
         totalLiquidity = 0; // Assuming zero initial liquidity
         collateralRatio = 80;
+        interestRate = 3;
     }
 
     //functions
@@ -115,7 +133,20 @@ contract LendingProtocol is ReentrancyGuard {
         updateBorrowerInfo(msg.sender, _amount);
     }
 
-    function depositLPT() public {}
+    function depositLPT(uint256 _lptAmount) public {
+        //check if _lptAmount is greater than 0
+        require(_lptAmount > 0, "Amount must be greater than 0");
+
+        //transfers the LPTokens to the protocol
+        lpToken.transferFrom(msg.sender, address(this), _lptAmount);
+
+        //push the user to the lenders mapping
+        lenders[msg.sender].amountLent += _lptAmount;
+        lenders[msg.sender].depositTime = block.timestamp;
+
+        // Emit an event after successful transfer
+        emit DepositedLPT(msg.sender, _lptAmount);
+    }
 
     fallback() external payable {
         depositETH(msg.value);

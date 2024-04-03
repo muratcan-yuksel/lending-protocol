@@ -20,23 +20,33 @@ describe("LendingProtocol", function () {
     // console.log("Token address:", await token.getAddress());
     const tokenAddress = await token.getAddress();
 
+    //wait for one block
+    await ethers.provider.send("evm_mine", []);
+
     // Deploy LendingProtocol contract
     const LendingProtocol = await ethers.getContractFactory("LendingProtocol");
     lendingProtocol = await LendingProtocol.deploy(tokenAddress);
     console.log("LendingProtocol address:", await lendingProtocol.getAddress());
     lendingProtocolAddress = await lendingProtocol.getAddress();
 
-    //send 500000 LPT from the deployer of the LPToken contract to the protocol
-    const amountToSend = ethers.parseEther("500000");
+    //send 200000 LPT from the deployer of the LPToken contract to the protocol
+    const amountToSend = ethers.parseEther("200000");
     await token
       .connect(deployer)
       .transfer(lendingProtocolAddress, amountToSend);
+
+    //send the same amount to user1
+    await token.connect(deployer).transfer(user1.address, amountToSend);
   }
 
-  //we're writing this as a function so that we can reuse it in our test cases
+  //we're writing these as functions so that we can reuse them in our test cases
   async function depositETH(user, amount) {
     // const depositAmount = 10;
     await lendingProtocol.connect(user).depositETH(amount, { value: amount });
+  }
+  async function depositLPT(user, amount) {
+    //notice the difference in value with the previous one, as it was about sending ETH while this is for just ERC20 tokens
+    await lendingProtocol.connect(user).depositLPT(amount);
   }
 
   beforeEach(async function () {
@@ -44,13 +54,13 @@ describe("LendingProtocol", function () {
     await setupContracts();
   });
 
-  it("the protocol should have 500000 tokens in the pool", async function () {
+  it("the protocol should have 200000 tokens in the pool", async function () {
     const totalLPTokens = await token.balanceOf(lendingProtocolAddress);
-    expect(totalLPTokens).to.equal(ethers.parseEther("500000"));
+    expect(totalLPTokens).to.equal(ethers.parseEther("200000"));
     //we can do this by callig a view function also
     const totalLPtokensViaFunctionCall =
       await lendingProtocol.getTotalLiquidity();
-    expect(totalLPtokensViaFunctionCall).to.equal(ethers.parseEther("500000"));
+    expect(totalLPtokensViaFunctionCall).to.equal(ethers.parseEther("200000"));
   });
   //testing the depositETH function
   it("does not accept zero amount", async function () {
@@ -140,5 +150,59 @@ describe("LendingProtocol", function () {
 
   //depositETH tests ends
 
-  //  these brackets belong to describe statement
+  //depositLPT tests starts
+  //this first one shows the the function works fine, but this test suite needs refactoring
+  it("should allow depositing LPT tokens", async function () {
+    const depositAmount = 20;
+
+    //initial liquidity in the protocol
+    const initialLiquidity = await lendingProtocol.getTotalLiquidity();
+    console.log("Initial liquidity:", initialLiquidity.toString());
+
+    // Get the allowance before approval
+    const initialAllowance = await token.allowance(
+      user1.address,
+      lendingProtocolAddress
+    );
+    console.log("Initial allowance:", initialAllowance.toString());
+
+    //check the user1 balance
+    const user1Balance = await token.balanceOf(user1.address);
+    const parsedUser1Balance = ethers.formatEther(user1Balance);
+    console.log("user1 lpt balance:", user1Balance);
+
+    //allow lendingprotocol contract to spend the depositamount of lptokens for user1
+    await token.connect(user1).approve(lendingProtocolAddress, depositAmount);
+
+    // Get the allowance after approval
+    const updatedAllowance = await token.allowance(
+      user1.address,
+      lendingProtocolAddress
+    );
+    console.log("Updated allowance:", updatedAllowance.toString());
+
+    //we don't call depositLPT function above
+    //because this expect statement really calls the depositLPT function
+    // Check if DepositedLPT event was emitted
+    await expect(
+      lendingProtocol.connect(user1).depositLPT(depositAmount)
+    ).to.emit(lendingProtocol, "DepositedLPT");
+
+    // Check the updated allowance
+    const finalAllowance = await token.allowance(
+      user1.address,
+      lendingProtocolAddress
+    );
+    console.log("Final allowance:", finalAllowance.toString());
+
+    //check liquidity again to compare
+    const finalLiquidity = await lendingProtocol.getTotalLiquidity();
+    console.log("Final liquidity:", finalLiquidity.toString());
+
+    //check the user1 balance
+    const finalUser1Balance = await token.balanceOf(user1.address);
+    const parsedFinalUser1Balance = ethers.formatEther(finalUser1Balance);
+    console.log("final user1 lpt balance:", parsedFinalUser1Balance);
+  });
+  //  these brackoets belong to describe statement
 });
