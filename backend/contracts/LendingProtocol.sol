@@ -122,6 +122,38 @@ contract LendingProtocol is ReentrancyGuard {
 
     //helper functions for depositETH function ends
 
+    function calculateDaysPassed(
+        uint256 timestamp1,
+        uint256 timestamp2
+    ) internal pure returns (uint256) {
+        require(
+            timestamp1 <= timestamp2,
+            "First timestamp must be earlier or equal to the second timestamp"
+        );
+
+        uint256 secondsPassed = timestamp2 - timestamp1;
+        uint256 daysPassed = secondsPassed / 86400; // Number of seconds in a day
+
+        console.log("Number of days passed:", daysPassed);
+        return daysPassed;
+    }
+
+    function calculateInterest() public view returns (uint256) {
+        //call calculateDaysPassed function
+        uint256 daysPassed = calculateDaysPassed(
+            lenders[msg.sender].depositTime,
+            block.timestamp
+        );
+
+        uint256 interest = lenders[msg.sender].amountLent *
+            interestRate *
+            daysPassed;
+        console.log("Interest earned:", interest);
+        return interest;
+    }
+
+    //main functions start
+
     function depositETH(uint256 _amount) public payable {
         require(_amount > 0, "Amount must be greater than 0");
         // console.log("deposited amount", _amount);
@@ -146,6 +178,29 @@ contract LendingProtocol is ReentrancyGuard {
 
         // Emit an event after successful transfer
         emit DepositedLPT(msg.sender, _lptAmount);
+        console.log(block.timestamp);
+    }
+
+    function withdrawInterest() public {
+        //check if the user has ever lent any LPTokens
+        require(
+            lenders[msg.sender].depositTime != 0,
+            "You are not a lender or have not lent any LPTokens"
+        );
+        //if the user didn't earn anything yet, they they can't call the function
+        //get the lenderinfo interst earned and check if it is greater than 0
+        require(
+            lenders[msg.sender].interestEarned > 0,
+            "You have not earned any interest yet"
+        );
+
+        //call calculateInterest function
+        uint256 interest = calculateInterest();
+
+        //transfers the LPTokens to the user from the protocol
+        transferLPTtoUser(msg.sender, interest);
+        //update the user's interest to 0
+        lenders[msg.sender].interestEarned = 0;
     }
 
     fallback() external payable {
