@@ -49,6 +49,10 @@ describe("LendingProtocol", function () {
     await lendingProtocol.connect(user).depositLPT(amount);
   }
 
+  async function withdrawInterest(user) {
+    await lendingProtocol.connect(user).withdrawInterest();
+  }
+
   beforeEach(async function () {
     //call the setup function
     await setupContracts();
@@ -204,5 +208,34 @@ describe("LendingProtocol", function () {
     const parsedFinalUser1Balance = ethers.formatEther(finalUser1Balance);
     console.log("final user1 lpt balance:", parsedFinalUser1Balance);
   });
+  //depositLPT tests ends
+  //withdrawInterest tests starts
+  it("calculates the interest", async function () {
+    const depositAmount = 100;
+
+    //allow lendingprotocol contract to spend the depositamount of lptokens for user1
+    await token.connect(user1).approve(lendingProtocolAddress, depositAmount);
+
+    //user1 deposits 100 LPTokens
+    await depositLPT(user1, depositAmount);
+    //wait for one block
+    await ethers.provider.send("evm_mine", []);
+    //22 days pass
+    await ethers.provider.send("evm_increaseTime", [350 * 86400]);
+    //wait for one block
+    await ethers.provider.send("evm_mine", []);
+    //user1 calls calculateInterest function
+
+    //check the user1 balance
+    const user1Balance = await token.balanceOf(user1.address);
+    const parsedUser1Balance = ethers.formatEther(user1Balance);
+    console.log("user1 lpt balance:", user1Balance);
+    //log the interest
+    const interest = await lendingProtocol.connect(user1).calculateInterest();
+    //interest will return 0 now
+    console.log("Interest:", interest.toString());
+  });
+
+  //withdrawInterest tests ends
   //  these brackoets belong to describe statement
 });

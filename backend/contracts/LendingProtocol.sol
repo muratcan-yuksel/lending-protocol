@@ -145,10 +145,26 @@ contract LendingProtocol is ReentrancyGuard {
             block.timestamp
         );
 
-        uint256 interest = lenders[msg.sender].amountLent *
-            interestRate *
-            daysPassed;
+        //typecasting
+        uint8 remainingDays = uint8(daysPassed % 30);
+
+        //check if 30 days has passed
+        //via a custom error
+
+        require(daysPassed >= 30, "Withdraw cycle isn't completed yet.");
+
+        //divide the dayspassed by 30 to get amount of months passed
+        uint256 monthsPassed = daysPassed / 30;
+        //calculate interest
+        //the reason we divide by 100 at the end and not the interestRate is because
+        //Solidity doesn't accept decimal numbers...
+        uint256 interest = (lenders[msg.sender].amountLent *
+            (interestRate) *
+            1) / 100;
+        console.log("amount lent:", lenders[msg.sender].amountLent);
         console.log("Interest earned:", interest);
+        console.log("Months passed:", monthsPassed);
+
         return interest;
     }
 
