@@ -160,10 +160,12 @@ contract LendingProtocol is ReentrancyGuard {
         //Solidity doesn't accept decimal numbers...
         uint256 interest = (lenders[msg.sender].amountLent *
             (interestRate) *
-            1) / 100;
+            monthsPassed) / 100;
+
         console.log("amount lent:", lenders[msg.sender].amountLent);
         console.log("Interest earned:", interest);
         console.log("Months passed:", monthsPassed);
+        console.log("remaining days:", remainingDays);
 
         return interest;
     }
@@ -203,18 +205,18 @@ contract LendingProtocol is ReentrancyGuard {
             lenders[msg.sender].depositTime != 0,
             "You are not a lender or have not lent any LPTokens"
         );
-        //if the user didn't earn anything yet, they they can't call the function
-        //get the lenderinfo interst earned and check if it is greater than 0
-        require(
-            lenders[msg.sender].interestEarned > 0,
-            "You have not earned any interest yet"
-        );
+        // //if the user didn't earn anything yet, they they can't call the function
+        // //get the lenderinfo interst earned and check if it is greater than 0
+        // require(
+        //     lenders[msg.sender].interestEarned > 0,
+        //     "You have not earned any interest yet"
+        // );
 
         //call calculateInterest function
         uint256 interest = calculateInterest();
 
         //transfers the LPTokens to the user from the protocol
-        transferLPTtoUser(msg.sender, interest);
+        lpToken.transfer(msg.sender, interest);
         //update the user's interest to 0
         lenders[msg.sender].interestEarned = 0;
     }

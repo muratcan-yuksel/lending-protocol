@@ -210,30 +210,44 @@ describe("LendingProtocol", function () {
   });
   //depositLPT tests ends
   //withdrawInterest tests starts
-  it("calculates the interest", async function () {
+  it("calculates the interest correctly", async function () {
     const depositAmount = 100;
-
     //allow lendingprotocol contract to spend the depositamount of lptokens for user1
     await token.connect(user1).approve(lendingProtocolAddress, depositAmount);
-
     //user1 deposits 100 LPTokens
     await depositLPT(user1, depositAmount);
+    //80 days pass
+    await ethers.provider.send("evm_increaseTime", [80 * 86400]);
     //wait for one block
     await ethers.provider.send("evm_mine", []);
-    //22 days pass
-    await ethers.provider.send("evm_increaseTime", [350 * 86400]);
-    //wait for one block
-    await ethers.provider.send("evm_mine", []);
-    //user1 calls calculateInterest function
-
-    //check the user1 balance
-    const user1Balance = await token.balanceOf(user1.address);
-    const parsedUser1Balance = ethers.formatEther(user1Balance);
-    console.log("user1 lpt balance:", user1Balance);
-    //log the interest
     const interest = await lendingProtocol.connect(user1).calculateInterest();
-    //interest will return 0 now
-    console.log("Interest:", interest.toString());
+    //100 LPT would get 3 LPT interest in a month, 80 % 30 = 20 days out of cycle
+    //therefore the user will get paid for 2 months, which is 6 LPT
+    expect(interest).to.equal(6);
+  });
+
+  it("user should be able to withdraw interest", async function () {
+    //almost the same code as above
+    const depositAmount = 100;
+    //allow lendingprotocol contract to spend the depositamount of lptokens for user1
+    await token.connect(user1).approve(lendingProtocolAddress, depositAmount);
+    //user1 deposits 100 LPTokens
+    await depositLPT(user1, depositAmount);
+    //80 days pass
+    await ethers.provider.send("evm_increaseTime", [80 * 86400]);
+    //wait for one block
+    await ethers.provider.send("evm_mine", []);
+    //get initial user1 balance
+    const initialUser1Balance = await token.balanceOf(user1.address);
+    //user1 withdraws interest
+    await withdrawInterest(user1);
+    //get final user1 balance
+    const finalUser1Balance = await token.balanceOf(user1.address);
+    //log both of them in understandable way
+    console.log("initial user1 balance:", initialUser1Balance.toString());
+    console.log("final user1 balance:", finalUser1Balance.toString());
+    //compare
+    expect(finalUser1Balance).to.equal(initialUser1Balance + BigInt(6));
   });
 
   //withdrawInterest tests ends
