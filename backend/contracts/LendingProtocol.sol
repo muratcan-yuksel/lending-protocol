@@ -14,7 +14,7 @@ contract LendingProtocol is ReentrancyGuard {
     uint256 public totalLiquidity; //lpToken.balanceOf(address(this));
     // uint256 public totalEthLocked; //unncessary in our case since we can query the contract balance directly
     uint256 public collateralRatio;
-    uint8 public liquidationThreshold = 80;
+    // uint8 public liquidationThreshold = 80;
     uint8 public interestRate; //weekly interest rate (in percentage)
     //mock ETH price
     uint16 public ethPrice = 3000;
@@ -79,6 +79,12 @@ contract LendingProtocol is ReentrancyGuard {
         address _user
     ) public view returns (BorrowerInfo memory) {
         return borrowers[_user];
+    }
+
+    function getLenderInfo(
+        address _user
+    ) public view returns (LenderInfo memory) {
+        return lenders[_user];
     }
 
     //helper functions for depositETH function starts
@@ -172,7 +178,7 @@ contract LendingProtocol is ReentrancyGuard {
 
     //main functions start
 
-    function depositETH(uint256 _amount) public payable {
+    function depositETH(uint256 _amount) public payable nonReentrant {
         require(_amount > 0, "Amount must be greater than 0");
         // console.log("deposited amount", _amount);
 
@@ -205,12 +211,6 @@ contract LendingProtocol is ReentrancyGuard {
             lenders[msg.sender].depositTime != 0,
             "You are not a lender or have not lent any LPTokens"
         );
-        // //if the user didn't earn anything yet, they they can't call the function
-        // //get the lenderinfo interst earned and check if it is greater than 0
-        // require(
-        //     lenders[msg.sender].interestEarned > 0,
-        //     "You have not earned any interest yet"
-        // );
 
         //call calculateInterest function
         uint256 interest = calculateInterest();
@@ -219,6 +219,58 @@ contract LendingProtocol is ReentrancyGuard {
         lpToken.transfer(msg.sender, interest);
         //update the user's interest to 0
         lenders[msg.sender].interestEarned = 0;
+    }
+
+    // function withdrawETH(uint256 _amount) public nonReentrant {
+    //     //check if the user has any ETH
+    //     require(
+    //         borrowers[msg.sender].ehtDeposited > 0,
+    //         "You have not deposited any ETH"
+    //     );
+    //     // Check if the user has enough ETH deposited
+    //     require(
+    //         borrowers[msg.sender].ehtDeposited >= _amount,
+    //         "Insufficient ETH deposited"
+    //     );
+
+    //     // Calculate the collateral value of the withdrawn ETH
+    //     uint256 collateralValueWithdrawn = (calculateLPTokensToUser(_amount) *
+    //         collateralRatio) / 100;
+
+    //     // Update borrower's ETH deposited and collateral value
+    //     borrowers[msg.sender].ehtDeposited -= _amount;
+    //     borrowers[msg.sender].collateralValue -= collateralValueWithdrawn;
+
+    //     // Transfer the ETH to the user
+    //     payable(msg.sender).transfer(_amount);
+
+    //     // Emit an event for withdrawal
+    //     emit WithdrawnETH(msg.sender, _amount);
+    // }
+
+    function repayDebt() public {
+        //check if the borrower has collateralValue more than 0
+        require(
+            borrowers[msg.sender].collateralValue > 0,
+            "You do not have any debt."
+        );
+        //the user pays all of their debt
+        lpToken.transferFrom(
+            msg.sender,
+            address(this),
+            borrowers[msg.sender].collateralValue
+        );
+        //update the user's debt to 0
+        borrowers[msg.sender].collateralValue = 0;
+
+        //send locked ETH to the user
+        payable(msg.sender).transfer(borrowers[msg.sender].ehtDeposited);
+
+        //update locked ETH
+        borrowers[msg.sender].ehtDeposited = 0;
+
+        //emit event
+        emit RepaidETH(msg.sender, borrowers[msg.sender].ehtDeposited);
     }
 
     fallback() external payable {

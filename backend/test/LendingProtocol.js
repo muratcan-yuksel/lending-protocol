@@ -44,6 +44,10 @@ describe("LendingProtocol", function () {
     // const depositAmount = 10;
     await lendingProtocol.connect(user).depositETH(amount, { value: amount });
   }
+
+  async function repayDebt(user) {
+    await lendingProtocol.connect(user).repayDebt();
+  }
   async function depositLPT(user, amount) {
     //notice the difference in value with the previous one, as it was about sending ETH while this is for just ERC20 tokens
     await lendingProtocol.connect(user).depositLPT(amount);
@@ -248,8 +252,40 @@ describe("LendingProtocol", function () {
     console.log("final user1 balance:", finalUser1Balance.toString());
     //compare
     expect(finalUser1Balance).to.equal(initialUser1Balance + BigInt(6));
+    //call getlenderinfo function
+    const lender = await lendingProtocol.getLenderInfo(user1.address);
+    //check interestEarned, it should be 0 now
+    expect(lender.interestEarned).to.equal(0);
+  });
+  //withdrawInterest tests ends
+
+  //repayDebt tests starts
+  it("repays the debt", async function () {
+    //   // Connect to user1 and deposit 1 ETH to the protocol
+    const initialTotalLiquidity = await lendingProtocol.getTotalLiquidity();
+    await depositETH(user1, 1);
+    //   //wait for one block
+    await ethers.provider.send("evm_mine", []);
+    //   //check borrower's info
+    const borrower = await lendingProtocol.getBorrowerInfo(user1.address);
+    expect(borrower.ehtDeposited).to.equal(1);
+    expect(borrower.collateralValue).to.equal(2400);
+    //allow lendingprotocol contract to spend the depositamount of lptokens for user1
+    await token
+      .connect(user1)
+      .approve(lendingProtocolAddress, borrower.collateralValue);
+
+    //   //user1 withdraws 1 ETH
+    await repayDebt(user1);
+    //   //wait for one block
+    await ethers.provider.send("evm_mine", []);
+    //   //check borrower's info
+    const finalBorrower = await lendingProtocol.getBorrowerInfo(user1.address);
+    expect(finalBorrower.ehtDeposited).to.equal(0);
+    expect(finalBorrower.collateralValue).to.equal(0);
   });
 
-  //withdrawInterest tests ends
+  //repayDebt tests ends
+
   //  these brackoets belong to describe statement
 });
