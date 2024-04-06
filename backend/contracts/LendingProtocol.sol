@@ -221,33 +221,6 @@ contract LendingProtocol is ReentrancyGuard {
         lenders[msg.sender].interestEarned = 0;
     }
 
-    // function withdrawETH(uint256 _amount) public nonReentrant {
-    //     //check if the user has any ETH
-    //     require(
-    //         borrowers[msg.sender].ehtDeposited > 0,
-    //         "You have not deposited any ETH"
-    //     );
-    //     // Check if the user has enough ETH deposited
-    //     require(
-    //         borrowers[msg.sender].ehtDeposited >= _amount,
-    //         "Insufficient ETH deposited"
-    //     );
-
-    //     // Calculate the collateral value of the withdrawn ETH
-    //     uint256 collateralValueWithdrawn = (calculateLPTokensToUser(_amount) *
-    //         collateralRatio) / 100;
-
-    //     // Update borrower's ETH deposited and collateral value
-    //     borrowers[msg.sender].ehtDeposited -= _amount;
-    //     borrowers[msg.sender].collateralValue -= collateralValueWithdrawn;
-
-    //     // Transfer the ETH to the user
-    //     payable(msg.sender).transfer(_amount);
-
-    //     // Emit an event for withdrawal
-    //     emit WithdrawnETH(msg.sender, _amount);
-    // }
-
     function repayDebt() public {
         //check if the borrower has collateralValue more than 0
         require(
@@ -271,6 +244,15 @@ contract LendingProtocol is ReentrancyGuard {
 
         //emit event
         emit RepaidETH(msg.sender, borrowers[msg.sender].ehtDeposited);
+    }
+
+    //should also repay the interest to the user
+    function withdrawLiquidity() public {
+        //check if the user has ever lent any LPTokens
+        require(
+            lenders[msg.sender].depositTime != 0,
+            "You are not a lender or have not lent any LPTokens"
+        );
     }
 
     fallback() external payable {

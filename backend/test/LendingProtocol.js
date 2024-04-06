@@ -261,12 +261,11 @@ describe("LendingProtocol", function () {
 
   //repayDebt tests starts
   it("repays the debt", async function () {
-    //   // Connect to user1 and deposit 1 ETH to the protocol
-    const initialTotalLiquidity = await lendingProtocol.getTotalLiquidity();
+    // Connect to user1 and deposit 1 ETH to the protocol
     await depositETH(user1, 1);
-    //   //wait for one block
+    //wait for one block
     await ethers.provider.send("evm_mine", []);
-    //   //check borrower's info
+    //check borrower's info
     const borrower = await lendingProtocol.getBorrowerInfo(user1.address);
     expect(borrower.ehtDeposited).to.equal(1);
     expect(borrower.collateralValue).to.equal(2400);
@@ -275,11 +274,11 @@ describe("LendingProtocol", function () {
       .connect(user1)
       .approve(lendingProtocolAddress, borrower.collateralValue);
 
-    //   //user1 withdraws 1 ETH
+    //user1 withdraws 1 ETH
     await repayDebt(user1);
-    //   //wait for one block
+    //wait for one block
     await ethers.provider.send("evm_mine", []);
-    //   //check borrower's info
+    //check borrower's info
     const finalBorrower = await lendingProtocol.getBorrowerInfo(user1.address);
     expect(finalBorrower.ehtDeposited).to.equal(0);
     expect(finalBorrower.collateralValue).to.equal(0);
