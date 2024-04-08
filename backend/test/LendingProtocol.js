@@ -20,9 +20,6 @@ describe("LendingProtocol", function () {
     // console.log("Token address:", await token.getAddress());
     const tokenAddress = await token.getAddress();
 
-    //wait for one block
-    await ethers.provider.send("evm_mine", []);
-
     // Deploy LendingProtocol contract
     const LendingProtocol = await ethers.getContractFactory("LendingProtocol");
     lendingProtocol = await LendingProtocol.deploy(tokenAddress);
@@ -74,6 +71,7 @@ describe("LendingProtocol", function () {
       await lendingProtocol.getTotalLiquidity();
     expect(totalLPtokensViaFunctionCall).to.equal(ethers.parseEther("200000"));
   });
+
   //testing the depositETH function
   it("does not accept zero amount", async function () {
     await expect(depositETH(user1, 0)).to.be.revertedWith(
@@ -92,16 +90,9 @@ describe("LendingProtocol", function () {
       console.error("Transaction failed:", error);
       return expect(false).to.be.true; // Explicitly fail the test
     }
-
-    // If the transaction succeeds, no error will be thrown, and the test will continue
-
-    // Verify that the deposit was successful (optional):
-    // - Check updated ETH balance or LP token balance
-    // - Assert relevant events emitted by the contract
   });
 
   it("user should be able to deposit ETH to the protocol and the ETH pool in the protocol increases", async function () {
-    // Connect to user1 and deposit 10 ETH to the protocol
     const initialEthInPool = await lendingProtocol.getTotalEthLocked(); // Get initial ETH in pool
 
     const depositAmount = 10;
@@ -125,9 +116,6 @@ describe("LendingProtocol", function () {
     const initialLPBalance = await token.balanceOf(user1.address);
     await depositETH(user1, 1);
 
-    //wait for one block
-    await ethers.provider.send("evm_mine", []);
-
     const finalLPBalance = await token.balanceOf(user1.address);
 
     //1 ETH is 3000 LPTokens in our scenario
@@ -142,8 +130,7 @@ describe("LendingProtocol", function () {
     // Connect to user1 and deposit 1 ETH to the protocol
     const initialTotalLiquidity = await lendingProtocol.getTotalLiquidity();
     await depositETH(user1, 1);
-    //wait for one block
-    await ethers.provider.send("evm_mine", []);
+
     //considering 1 eth is 3000 LPT
     const finalTotalLiquidity = await lendingProtocol.getTotalLiquidity();
     expect(finalTotalLiquidity).to.equal(initialTotalLiquidity - BigInt(2400));
@@ -152,8 +139,7 @@ describe("LendingProtocol", function () {
   it("updates user/borrower info", async function () {
     // Connect to user1 and deposit 1 ETH to the protocol
     await depositETH(user1, 1);
-    //wait for one block
-    await ethers.provider.send("evm_mine", []);
+
     //considering 1 eth is 3000 LPT and the collateral ratio is 80
     const borrower = await lendingProtocol.getBorrowerInfo(user1.address);
     expect(borrower.ehtDeposited).to.equal(1);
@@ -163,24 +149,19 @@ describe("LendingProtocol", function () {
   //depositETH tests ends
 
   //depositLPT tests starts
-  //this first one shows the the function works fine, but this test suite needs refactoring
   it("should allow depositing LPT tokens", async function () {
     const depositAmount = 20;
-
     //initial liquidity in the protocol
     const initialLiquidity = await lendingProtocol.getTotalLiquidity();
     console.log("Initial liquidity:", initialLiquidity.toString());
-
     // Get the allowance before approval
     const initialAllowance = await token.allowance(
       user1.address,
       lendingProtocolAddress
     );
     console.log("Initial allowance:", initialAllowance.toString());
-
     //check the user1 balance
     const user1Balance = await token.balanceOf(user1.address);
-    const parsedUser1Balance = ethers.formatEther(user1Balance);
     console.log("user1 lpt balance:", user1Balance);
 
     //allow lendingprotocol contract to spend the depositamount of lptokens for user1
@@ -316,11 +297,27 @@ describe("LendingProtocol", function () {
     expect(finalUser1Balance).to.greaterThan(initialUser1Balance);
     //call getlenderinfo function
     const lender = await lendingProtocol.getLenderInfo(user1.address);
+    //check lender info
+    expect(lender.amountLent).to.equal(0);
   });
 
   //withdrawLiquidity tests ends
 
-  //test the scenario where someone accidentally sends ether to the contract but not via depositETH function, will the fallback work?
+  //receive and fallback functions tests starts
+  it("you can't send ETH to the contract directly without calling a function", async function () {
+    // Send ETH directly to the contract from user1
+    const ethAmount = ethers.parseEther("1"); // 1 ETH
+    await expect(
+      user1.sendTransaction({
+        to: lendingProtocolAddress,
+        value: ethAmount,
+        gasLimit: 1000000, // Adjust the gas limit as needed
+        gasPrice: ethers.parseUnits("10", "gwei"), // Adjust the gas price as needed
+      })
+    ).to.be.revertedWith("Cannot send ETH directly to the contract");
+  });
+
+  //receive and fallback functions tests ends
 
   //  these brackoets belong to describe statement
 });

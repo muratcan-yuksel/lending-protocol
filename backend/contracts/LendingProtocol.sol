@@ -272,10 +272,10 @@ contract LendingProtocol is ReentrancyGuard {
     }
 
     fallback() external payable {
-        depositETH(msg.value);
+        revert("Cannot send ETH directly to the contract");
     }
 
     receive() external payable {
-        depositETH(msg.value);
+        revert("Cannot send ETH directly to the contract");
     }
 }
