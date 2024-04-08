@@ -57,6 +57,10 @@ describe("LendingProtocol", function () {
     await lendingProtocol.connect(user).withdrawInterest();
   }
 
+  async function withdrawLiquidity(user) {
+    await lendingProtocol.connect(user).withdrawLiquidity();
+  }
+
   beforeEach(async function () {
     //call the setup function
     await setupContracts();
@@ -283,8 +287,40 @@ describe("LendingProtocol", function () {
     expect(finalBorrower.ehtDeposited).to.equal(0);
     expect(finalBorrower.collateralValue).to.equal(0);
   });
-
   //repayDebt tests ends
+
+  //withdrawLiquidity tests starts
+  it("user can withdraw all their liquidty + interest", async function () {
+    //almost the same code as withdraw interest test
+    const depositAmount = 100;
+    //allow lendingprotocol contract to spend the depositamount of lptokens for user1
+    await token.connect(user1).approve(lendingProtocolAddress, depositAmount);
+    //user1 deposits 100 LPTokens
+    await depositLPT(user1, depositAmount);
+    //80 days pass
+    await ethers.provider.send("evm_increaseTime", [80 * 86400]);
+    //wait for one block
+    await ethers.provider.send("evm_mine", []);
+    //get initial user1 balance
+    const initialUser1Balance = await token.balanceOf(user1.address);
+    //user1 withdraws interest
+    await withdrawLiquidity(user1);
+    await ethers.provider.send("evm_mine", []);
+    //get initial user1 balance
+    //get final user1 balance
+    const finalUser1Balance = await token.balanceOf(user1.address);
+    //log both of them in understandable way
+    console.log("initial user1 balance:", initialUser1Balance.toString());
+    console.log("final user1 balance:", finalUser1Balance.toString());
+    //compare
+    expect(finalUser1Balance).to.greaterThan(initialUser1Balance);
+    //call getlenderinfo function
+    const lender = await lendingProtocol.getLenderInfo(user1.address);
+  });
+
+  //withdrawLiquidity tests ends
+
+  //test the scenario where someone accidentally sends ether to the contract but not via depositETH function, will the fallback work?
 
   //  these brackoets belong to describe statement
 });

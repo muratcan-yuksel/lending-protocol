@@ -18,19 +18,16 @@ contract LendingProtocol is ReentrancyGuard {
     uint8 public interestRate; //weekly interest rate (in percentage)
     //mock ETH price
     uint16 public ethPrice = 3000;
-    //oracle address
-    address public oracle;
 
     //events
     event DepositedLPT(address indexed user, uint256 amountLPT);
     event DepositedETH(address indexed user, uint256 amountETH);
     event WithdrawnLPT(address indexed user, uint256 amountLPT);
-    event WithdrawnETH(address indexed user, uint256 amountETH);
-    event BorrowedETH(address indexed user, uint256 amountETH);
-    event BorrowedLPT(address indexed user, uint256 amountLPT);
+    // event WithdrawnETH(address indexed user, uint256 amountETH);
+    // event BorrowedETH(address indexed user, uint256 amountETH);
+    // event BorrowedLPT(address indexed user, uint256 amountLPT);
     event RepaidETH(address indexed user, uint256 amountETH);
-    event RepaidLPT(address indexed user, uint256 amountLPT);
-    event Liquidated(address indexed user, uint256 amountETH);
+    // event RepaidLPT(address indexed user, uint256 amountLPT);
 
     //mappings
 
@@ -61,7 +58,6 @@ contract LendingProtocol is ReentrancyGuard {
     }
 
     //functions
-
     //view functions
     function getTotalLiquidity() public view returns (uint256) {
         // Recalculate totalLiquidity every time this function is called
@@ -87,7 +83,7 @@ contract LendingProtocol is ReentrancyGuard {
         return lenders[_user];
     }
 
-    //helper functions for depositETH function starts
+    //helper functions
 
     function calculateLPTokensToUser(
         uint256 _ethAmount
@@ -120,13 +116,12 @@ contract LendingProtocol is ReentrancyGuard {
         lpToken.transfer(_user, lptAmount);
     }
 
+    //change this function as it only works for depositing but not withdrawing
     function updateBorrowerInfo(address _user, uint256 _amount) internal {
         borrowers[_user].ehtDeposited += _amount;
         borrowers[_user].collateralValue += (calculateLPTokensToUser(_amount));
         borrowers[_user].depositTime = block.timestamp;
     }
-
-    //helper functions for depositETH function ends
 
     function calculateDaysPassed(
         uint256 timestamp1,
@@ -189,6 +184,7 @@ contract LendingProtocol is ReentrancyGuard {
         updateBorrowerInfo(msg.sender, _amount);
     }
 
+    //lenders use this function
     function depositLPT(uint256 _lptAmount) public {
         //check if _lptAmount is greater than 0
         require(_lptAmount > 0, "Amount must be greater than 0");
@@ -219,6 +215,10 @@ contract LendingProtocol is ReentrancyGuard {
         lpToken.transfer(msg.sender, interest);
         //update the user's interest to 0
         lenders[msg.sender].interestEarned = 0;
+        lenders[msg.sender].depositTime = block.timestamp;
+
+        //emit event
+        emit WithdrawnLPT(msg.sender, interest);
     }
 
     function repayDebt() public {
@@ -253,6 +253,22 @@ contract LendingProtocol is ReentrancyGuard {
             lenders[msg.sender].depositTime != 0,
             "You are not a lender or have not lent any LPTokens"
         );
+        //calculates the interest
+        uint256 interest = calculateInterest();
+
+        //add amountLent and interestEarned together
+        uint256 totalAmount = lenders[msg.sender].amountLent + interest;
+
+        //transfers the LPTokens to the user from the protocol
+        lpToken.transfer(msg.sender, totalAmount);
+
+        //update the user's information
+        lenders[msg.sender].interestEarned = 0;
+        lenders[msg.sender].amountLent = 0;
+        lenders[msg.sender].depositTime = block.timestamp;
+
+        //emit event
+        emit WithdrawnLPT(msg.sender, totalAmount);
     }
 
     fallback() external payable {
